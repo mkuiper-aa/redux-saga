@@ -1,16 +1,25 @@
 import test from 'tape';
-import proc, { NOT_ITERATOR_ERROR } from '../../src/internal/proc'
+import proc, { NOT_ITERATOR_ERROR, NOT_SCHEDULER_ERROR } from '../../src/internal/proc'
 import { is } from '../../src/utils'
 import * as io from '../../src/effects'
+import Scheduler from "../../src/internal/scheduler";
 
 const DELAY = 50
 
 
 test('proc input', assert => {
   assert.plan(1)
-
+  
   try {
     proc({})
+  } catch(error) {
+    assert.equal(error.message, NOT_SCHEDULER_ERROR,
+      'prox must throw if not provided with a scheduler'
+    )
+  }
+  
+  try {
+    proc(new Scheduler(), {})
   } catch(error) {
     assert.equal(error.message, NOT_ITERATOR_ERROR,
       'proc must throw if not provided with an iterator'
@@ -18,7 +27,7 @@ test('proc input', assert => {
   }
 
   try {
-    proc((function*() {})())
+    proc(new Scheduler(), (function*() {})())
   } catch(error) {
     assert.fail("proc must not throw if provided with an iterable")
   }
