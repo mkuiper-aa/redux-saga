@@ -146,7 +146,7 @@ export default function proc(
   name = 'anonymous',
   cont
 ) {
-  check(scheduler, () => typeof scheduler == Scheduler, NOT_SCHEDULER_ERROR)
+  // check(scheduler, () => typeof scheduler == Scheduler, NOT_SCHEDULER_ERROR)
   check(iterator, is.iterator, NOT_ITERATOR_ERROR)
 
   const {sagaMonitor, logger, onError} = options
