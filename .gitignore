@@ -35,3 +35,6 @@ es
 
 # docs generated files
 _book
+
+# IDE files
+.idea
