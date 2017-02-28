@@ -151,7 +151,7 @@ export default function proc(
 
   const {sagaMonitor, logger, onError} = options
   const log = logger || _log
-  const stdChannel = _stdChannel(subscribe)
+  const stdChannel = _stdChannel(scheduler, subscribe)
   /**
     Tracks the current effect cancellation
     Each time the generator progresses. calling runEffect will set a new value

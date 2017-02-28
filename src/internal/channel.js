@@ -150,13 +150,13 @@ export function eventChannel(subscribe, buffer = buffers.none(), matcher) {
   }
 }
 
-export function stdChannel(subscribe) {
+export function stdChannel(scheduler, subscribe) {
   const chan = eventChannel(cb => subscribe(input => {
     if (input[SAGA_ACTION]) {
       cb(input)
       return
     }
-    asap(() => cb(input))
+    scheduler.asap(() => cb(input))
   }))
 
   return {
