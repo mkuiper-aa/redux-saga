@@ -1,6 +1,7 @@
 import test from 'tape';
 import proc from '../../src/internal/proc'
 import * as io from '../../src/effects'
+import Scheduler from "../../src/internal/scheduler";
 
 test('proc sync fork failures: functions', assert => {
   assert.plan(1);
@@ -33,7 +34,7 @@ test('proc sync fork failures: functions', assert => {
     }
   }
 
-  proc(main()).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), main()).done.catch(err => assert.fail(err))
 
 
   const expected = ['start main', 'start parent', 'main caught immediatelyFailingFork'];
@@ -75,7 +76,7 @@ test('proc sync fork failures: functions/error bubbling', assert => {
     }
   }
 
-  proc(main()).done.catch(err => {
+  proc(new Scheduler(), main()).done.catch(err => {
     actual.push('uncaught ' + err)
   })
 
@@ -118,7 +119,7 @@ test('proc fork\'s failures: generators', assert => {
     }
   }
 
-  proc(main()).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), main()).done.catch(err => assert.fail(err))
 
 
   const expected = ['start main', 'start parent', 'main caught gen error'];
@@ -150,7 +151,7 @@ test('proc sync fork failures: spawns (detached forks)', assert => {
     }
   }
 
-  proc(main()).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), main()).done.catch(err => assert.fail(err))
 
 
   const expected = ['start main', 'spawn genChild', 'success parent'];

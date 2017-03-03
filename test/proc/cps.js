@@ -1,6 +1,7 @@
 import test from 'tape';
 import proc from '../../src/internal/proc'
 import * as io from '../../src/effects'
+import Scheduler from "../../src/internal/scheduler";
 
 const DELAY = 50
 
@@ -21,7 +22,7 @@ test('processor cps call handling', assert => {
     }
   }
 
-  proc(genFn()).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), genFn()).done.catch(err => assert.fail(err))
 
   const expected = ['call 1', 'call err'];
 
@@ -66,7 +67,7 @@ test('processor synchronous cps failures handling', assert => {
     }
   }
 
-  proc(genFnParent(),undefined,dispatch).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), genFnParent(),undefined,dispatch).done.catch(err => assert.fail(err))
 
 
   const expected = ['start parent','startChild','failure child','success parent'];
@@ -94,7 +95,7 @@ test('processor cps cancellation handling', assert => {
     yield io.cancel(task);
   }
 
-  proc(genFn(), undefined).done.then(() => {
+  proc(new Scheduler(), genFn(), undefined).done.then(() => {
     assert.true(cancelled, "processor should call cancellation function on callback");
     assert.end();
   }).catch(err => {

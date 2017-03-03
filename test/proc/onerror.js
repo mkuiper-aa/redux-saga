@@ -2,6 +2,7 @@ import test from 'tape';
 import proc from '../../src/internal/proc'
 import { noop } from '../../src/utils'
 import * as io from '../../src/effects'
+import Scheduler from "../../src/internal/scheduler";
 
 test('proc onError is optional', assert => {
   assert.plan(1)
@@ -16,7 +17,7 @@ test('proc onError is optional', assert => {
     yield io.call(child)
   }
 
-  proc(main(), undefined, noop, noop, {
+  proc(new Scheduler(), main(), undefined, noop, noop, {
   }).done.catch(
     err => {
       assert.equal(err, expectedError, 'proc does not blow up without onError')
@@ -39,7 +40,7 @@ test('proc onError is called for uncaught error', assert => {
     yield io.call(child)
   }
 
-  proc(main(), undefined, noop, noop, {
+  proc(new Scheduler(), main(), undefined, noop, noop, {
     onError: (err) => {
       actual = err
     }
@@ -70,7 +71,7 @@ test('proc onError is not called for caught errors', assert => {
     }
   }
 
-  proc(main(), undefined, noop, noop, {
+  proc(new Scheduler(), main(), undefined, noop, noop, {
     onError: (err) => {
       actual = err
     }

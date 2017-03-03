@@ -2,6 +2,7 @@ import test from 'tape';
 import proc from '../../src/internal/proc'
 import { is, deferred, arrayOfDeffered } from '../../src/utils'
 import * as io from '../../src/effects'
+import Scheduler from "../../src/internal/scheduler";
 
 
 test('proc fork handling: generators', assert => {
@@ -31,7 +32,7 @@ test('proc fork handling: generators', assert => {
     task2 = yield io.fork([inst, inst.gen])
   }
 
-  proc(genFn()).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), genFn()).done.catch(err => assert.fail(err))
 
   setTimeout(() => {
 
@@ -81,7 +82,7 @@ test('proc join handling : generators', assert => {
     actual.push( yield io.join(task)  )
   }
 
-  proc(genFn(), input).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), genFn(), input).done.catch(err => assert.fail(err))
   const expected = [true, {type: 'action-1'}, 1]
 
   setTimeout(() => {
@@ -120,7 +121,7 @@ test('proc fork/join handling : functions', assert => {
     actual.push( yield io.join(syncTask)  )
   }
 
-  proc(genFn()).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), genFn()).done.catch(err => assert.fail(err))
   const expected = [true, 2, 'sync']
 
   setTimeout(() => {
@@ -175,7 +176,7 @@ test('proc fork wait for attached children', assert => {
     actual.push(idx)
   }
 
-  proc(root()).done.then(() => {
+  proc(new Scheduler(), root()).done.then(() => {
     assert.deepEqual(actual, [0,2,3,1], 'parent task must wait for all forked tasks before terminating')
   }).catch(err => assert.fail(err))
 
@@ -258,7 +259,7 @@ test('proc auto cancel forks on error', assert => {
     'childA resolved', 'leaf 1 resolved', 'childB resolved', 'leaf 2 resolved', 'main error',
     'leaf 3 cancelled', 'leaf 4 cancelled', 'root caught main error'
   ]
-  proc(root()).done.then(() => {
+  proc(new Scheduler(), root()).done.then(() => {
     assert.deepEqual(actual, expected, 'parent task must cancel all forked tasks when it aborts')
   }).catch(err => assert.fail(err))
 
@@ -342,7 +343,7 @@ test('proc auto cancel forks on main cancelled', assert => {
     'childA resolved', 'leaf 1 resolved', 'childB resolved', 'leaf 2 resolved', 'root resolved',
     'main cancelled', 'leaf 3 cancelled', 'leaf 4 cancelled'
   ]
-  proc(root()).done.then(() => {
+  proc(new Scheduler(), root()).done.then(() => {
     assert.deepEqual(actual, expected, 'parent task must cancel all forked tasks when it\'s cancelled')
   }).catch(err => assert.fail(err))
 
@@ -433,7 +434,7 @@ test('proc auto cancel forks if a child aborts', assert => {
     'childA resolved', 'leaf 1 resolved', 'childB resolved', 'leaf 2 resolved', 'main resolved',
     'leaf 3 error', 'leaf 4 cancelled', 'root caught leaf 3 error'
   ]
-  proc(root()).done.then(() => {
+  proc(new Scheduler(), root()).done.then(() => {
     assert.deepEqual(actual, expected, 'parent task must cancel all forked tasks when it aborts')
   }).catch(err => assert.fail(err))
 })
@@ -526,7 +527,7 @@ test('proc auto cancel parent + forks if a child aborts', assert => {
     'childA resolved', 'leaf 1 resolved', 'childB resolved', 'leaf 2 resolved',
     'leaf 3 error', 'leaf 4 cancelled', 'main cancelled', 'root caught leaf 3 error'
   ]
-  proc(root()).done.then(() => {
+  proc(new Scheduler(), root()).done.then(() => {
     assert.deepEqual(actual, expected, 'parent task must cancel all forked tasks when it aborts')
   }).catch(err => assert.fail(err))
 })
@@ -552,7 +553,7 @@ test('joining multiple tasks', assert => {
 
   const expected = [1, 2, 3]
 
-  const mainTask = proc(genFn())
+  const mainTask = proc(new Scheduler(), genFn())
 
   Promise.resolve()
     .then(() => defs[0].resolve(1))

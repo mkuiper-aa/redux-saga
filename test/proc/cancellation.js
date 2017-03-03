@@ -4,6 +4,7 @@ import test from 'tape';
 import proc from '../../src/internal/proc'
 import * as io from '../../src/effects'
 import { deferred, arrayOfDeffered } from '../../src/utils'
+import Scheduler from "../../src/internal/scheduler";
 
 
 test('proc cancellation: call effect', assert => {
@@ -39,7 +40,7 @@ test('proc cancellation: call effect', assert => {
     }
   }
 
-  const task = proc(main())
+  const task = proc(new Scheduler(), main())
   cancelDef.promise.then(v => {
     actual.push(v)
     task.cancel()
@@ -127,7 +128,7 @@ test('proc cancellation: forked children', assert => {
   }
 
 
-  const task = proc(main())
+  const task = proc(new Scheduler(), main())
   cancelDef.promise.then(() => task.cancel())
   task.done.catch(err => assert.fail(err))
 
@@ -174,7 +175,7 @@ test('proc cancellation: take effect', assert => {
     }
   }
 
-  const task = proc(main(), input)
+  const task = proc(new Scheduler(), main(), input)
   cancelDef.promise.then(v => {
     actual.push(v)
     task.cancel()
@@ -251,7 +252,7 @@ test('proc cancellation: join effect (joining from a different task)', assert =>
     }
   }
 
-  const task = proc(main())
+  const task = proc(new Scheduler(), main())
   task.done.catch(err => assert.fail(err))
 
   /**
@@ -302,7 +303,7 @@ test('proc cancellation: join effect (join from the same task\'s parent)', asser
     }
   }
 
-  const task = proc(main())
+  const task = proc(new Scheduler(), main())
   cancelDef.promise.then(v => {
     actual.push(v)
     task.cancel()
@@ -377,7 +378,7 @@ test('proc cancellation: parallel effect', assert => {
     }
   }
 
-  const task = proc(main())
+  const task = proc(new Scheduler(), main())
   cancelDef.promise.then(v => {
     actual.push(v)
     task.cancel()
@@ -445,7 +446,7 @@ test('proc cancellation: race effect', assert => {
     }
   }
 
-  const task = proc(main())
+  const task = proc(new Scheduler(), main())
   cancelDef.promise.then(v => {
     actual.push(v)
     task.cancel()
@@ -504,7 +505,7 @@ test('proc cancellation: automatic parallel effect cancellation', assert => {
     }
   }
 
-  proc(genFn()).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), genFn()).done.catch(err => assert.fail(err))
   const expected = ['subtask_1', 'subtask_2',
     'subtask 2 cancelled', 'caught subtask_1 rejection']
 
@@ -575,7 +576,7 @@ test('proc cancellation: automatic race competitor cancellation', assert => {
     ]
   }
 
-  proc(genFn()).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), genFn()).done.catch(err => assert.fail(err))
   const expected = ['winner_1', 'loser_1', 'parallel_1', 'winner_2',
     'loser subtask cancelled', 'parallel_2']
 
@@ -622,7 +623,7 @@ test('proc cancellation:  manual task cancellation', assert => {
     yield io.cancel(task)
   }
 
-  proc(genFn()).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), genFn()).done.catch(err => assert.fail(err))
   const expected = ['signIn', 'expire_1', 'expire_2', 'signOut', 'task cancelled']
 
   setTimeout(() => {
@@ -695,7 +696,7 @@ test('proc cancellation: nested task cancellation', assert => {
     yield io.cancel(task)
   }
 
-  proc(genFn()).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), genFn()).done.catch(err => assert.fail(err))
   const expected = ['start', 'subtask_1',
     'nested_task_1_1', 'nested_task_2_1', 'stop',
     'nested task 1 cancelled', 'nested task 2 cancelled',
@@ -757,7 +758,7 @@ test('proc cancellation: nested forked task cancellation', assert => {
     yield io.cancel(task)
   }
 
-  proc(genFn()).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), genFn()).done.catch(err => assert.fail(err))
   const expected = [
     'start', 'subtask_1', 'nested_task_1',
     'stop',
@@ -798,7 +799,7 @@ test('cancel should be able to cancel multiple tasks', assert => {
 
   const expected = [0, 1, 2]
 
-  proc(genFn()).done
+  proc(new Scheduler(), genFn()).done
     .then(() => {
       assert.deepEqual(actual, expected,
         'it must be possible to cancel multiple tasks at once'
@@ -828,7 +829,7 @@ test('cancel should support for self cancellation', assert => {
 
   const expected = ['self cancellation']
 
-  proc(genFn()).done
+  proc(new Scheduler(), genFn()).done
     .then(() => {
       assert.deepEqual(actual, expected,
         'it must be possible to trigger self cancellation'

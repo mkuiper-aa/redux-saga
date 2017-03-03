@@ -2,7 +2,6 @@ import { noop, kTrue, is, log as _log, check, deferred, uid as nextEffectId, rem
 import { asEffect } from './io'
 import { stdChannel as _stdChannel, eventChannel, isEnd } from './channel'
 import { buffers } from './buffers'
-import Scheduler from "./scheduler";
 
 export const NOT_SCHEDULER_ERROR = 'proc first argument must be a scheduler'
 export const NOT_ITERATOR_ERROR = 'proc second argument (Saga function result) must be an iterator'
@@ -146,7 +145,7 @@ export default function proc(
   name = 'anonymous',
   cont
 ) {
-  // check(scheduler, () => typeof scheduler == Scheduler, NOT_SCHEDULER_ERROR)
+  check(scheduler, is.scheduler, NOT_SCHEDULER_ERROR)
   check(iterator, is.iterator, NOT_ITERATOR_ERROR)
 
   const {sagaMonitor, logger, onError} = options

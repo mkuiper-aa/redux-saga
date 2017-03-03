@@ -2,6 +2,7 @@ import test from 'tape';
 import proc from '../../src/internal/proc'
 import * as io from '../../src/effects'
 import {emitter, channel} from '../../src/internal/channel'
+import Scheduler from "../../src/internal/scheduler";
 
 
 test('proc put handling', assert => {
@@ -15,7 +16,7 @@ test('proc put handling', assert => {
     yield io.put(2)
   }
 
-  proc(genFn('arg'), undefined, dispatch).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), genFn('arg'), undefined, dispatch).done.catch(err => assert.fail(err))
 
   const expected = ['arg', 2];
   setTimeout(() => {
@@ -43,7 +44,7 @@ test('proc put in a channel', assert => {
     yield io.put(chan, 2)
   }
 
-  proc(genFn('arg')).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), genFn('arg')).done.catch(err => assert.fail(err))
 
   const expected = ['arg', 2];
   setTimeout(() => {
@@ -66,7 +67,7 @@ test('proc async put\'s response handling', assert => {
     actual.push(yield io.put.resolve(2))
   }
 
-  proc(genFn('arg'), undefined, dispatch).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), genFn('arg'), undefined, dispatch).done.catch(err => assert.fail(err))
 
   const expected = ['arg', 2];
   setTimeout(() => {
@@ -93,7 +94,7 @@ test('proc error put\'s response handling', assert => {
     }
   }
 
-  proc(genFn('arg'), undefined, dispatch).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), genFn('arg'), undefined, dispatch).done.catch(err => assert.fail(err))
 
   const expected = ['put resume'];
   setTimeout(() => {
@@ -119,7 +120,7 @@ test('proc error put.resolve\'s response handling', assert => {
     }
   }
 
-  proc(genFn('arg'), undefined, dispatch).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), genFn('arg'), undefined, dispatch).done.catch(err => assert.fail(err))
 
   const expected = ['error arg'];
   setTimeout(() => {
@@ -154,7 +155,7 @@ test('proc nested puts handling', assert => {
     yield io.fork(genA)
   }
 
-  proc(root(), em.subscribe, em.emit).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), root(), em.subscribe, em.emit).done.catch(err => assert.fail(err))
 
   const expected = ['put a', 'put b'];
   setTimeout(() => {

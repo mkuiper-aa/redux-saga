@@ -2,6 +2,7 @@ import test from 'tape';
 import proc from '../../src/internal/proc'
 import * as io from '../../src/effects'
 import { deferred } from '../../src/utils'
+import Scheduler from "../../src/internal/scheduler";
 
 test('processor select/getState handling', assert => {
   assert.plan(1);
@@ -25,7 +26,7 @@ test('processor select/getState handling', assert => {
     actual.push( yield io.select(counterSelector)  )
   }
 
-  proc(genFn(), undefined, undefined, () => state).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), genFn(), undefined, undefined, () => state).done.catch(err => assert.fail(err))
 
   const expected = [0,0,2,1,1];
 

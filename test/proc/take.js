@@ -2,6 +2,7 @@ import test from 'tape';
 import proc from '../../src/internal/proc'
 import { channel, END } from '../../src/internal/channel'
 import * as io from '../../src/effects'
+import Scheduler from "../../src/internal/scheduler";
 
 test('processor take from default channel', assert => {
   assert.plan(1);
@@ -38,7 +39,7 @@ test('processor take from default channel', assert => {
     }
   }
 
-  proc(genFn(), input).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), genFn(), input).done.catch(err => assert.fail(err))
 
   const expected = [{type: 'action-*'}, {type: 'action-1'}, {type: 'action-2'}, {isAction: true},
       {isMixedWithPredicate: true}, {type: 'action-3'}, {type: typeSymbol}, 'auto ended'];
@@ -75,7 +76,7 @@ test('processor take from provided channel', assert => {
     actual.push( yield io.take.maybe(chan) )
   }
 
-  proc(genFn()).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), genFn()).done.catch(err => assert.fail(err))
 
   const expected = [1, 2, 3, 4, END, END];
 
