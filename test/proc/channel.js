@@ -1,6 +1,7 @@
 import test from 'tape';
 import proc from '../../src/internal/proc'
 import * as io from '../../src/effects'
+import Scheduler from "../../src/internal/scheduler";
 //import { emitter } from '../../src/internal/channel'
 
 
@@ -23,7 +24,7 @@ test('proc create channel for store actions', assert => {
 
 
 
-  proc(genFn(), input).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), genFn(), input).done.catch(err => assert.fail(err))
 
   for (var i = 0; i < 10; i++) {
     dispatch({type: 'action', payload: i+1})
@@ -56,7 +57,7 @@ test('proc create channel for store actions (with buffer)', assert => {
     return chan
   }
 
-  proc(genFn(), input).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), genFn(), input).done.catch(err => assert.fail(err))
 
   Promise.resolve().then(() => {
     for (var i = 0; i < 10; i++) {

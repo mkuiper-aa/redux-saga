@@ -2,6 +2,7 @@ import test from 'tape'
 import proc from '../../src/internal/proc'
 import * as io from '../../src/effects'
 import {channel, END} from '../../src/internal/channel'
+import Scheduler from "../../src/internal/scheduler";
 
 test('proc flush handling', assert => {
   assert.plan(1)
@@ -22,7 +23,7 @@ test('proc flush handling', assert => {
     actual.push(yield io.flush(chan))
   }
 
-  proc(genFn()).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), genFn()).done.catch(err => assert.fail(err))
 
   const expected = [
     [],

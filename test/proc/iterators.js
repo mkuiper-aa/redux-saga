@@ -2,6 +2,7 @@ import test from 'tape';
 import proc from '../../src/internal/proc'
 import { arrayOfDeffered } from '../../src/utils'
 import * as io from '../../src/effects'
+import Scheduler from "../../src/internal/scheduler";
 
 const DELAY = 100
 
@@ -43,7 +44,7 @@ test('processor nested iterator handling', assert => {
     }
   }
 
-  proc(main(), input).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), main(), input).done.catch(err => assert.fail(err))
 
   const expected = [1, {type: 'action-1'}, 2, {type: 'action-2'}, 3, {type: 'action-3'}, 'caught child error'];
 

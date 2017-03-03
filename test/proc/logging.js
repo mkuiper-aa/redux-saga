@@ -2,6 +2,7 @@ import test from 'tape';
 import proc from '../../src/internal/proc'
 import { noop } from '../../src/utils'
 import * as io from '../../src/effects'
+import Scheduler from "../../src/internal/scheduler";
 
 test('proc logging', assert => {
   assert.plan(2)
@@ -16,7 +17,7 @@ test('proc logging', assert => {
     yield io.call(child)
   }
 
-  proc(main(), undefined, noop, noop, {
+  proc(new Scheduler(), main(), undefined, noop, noop, {
     logger: (level, ...args) => {
       actual = [level, args.join(' ')]
     }

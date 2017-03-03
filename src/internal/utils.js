@@ -32,6 +32,7 @@ export const is = {
   number         : n => typeof n === 'number',
   array          : Array.isArray,
   promise        : p => p && is.func(p.then),
+  scheduler      : s => s && is.func(s.exec) && is.func(s.asap) && is.func(s.suspend) && is.func(s.flush),
   iterator       : it => it && is.func(it.next) && is.func(it.throw),
   iterable       : it => it && is.func(Symbol) ? is.func(it[Symbol.iterator]) : is.array(it),
   task           : t => t && t[TASK],

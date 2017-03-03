@@ -2,6 +2,7 @@ import { noop, is, check, uid as nextSagaId, wrapSagaDispatch, isDev, log } from
 import proc from './proc'
 import { emitter } from './channel'
 import { ident } from './utils'
+import Scheduler from "./scheduler";
 
 export default function sagaMiddlewareFactory(options = {}) {
   let runSagaDynamically
@@ -61,6 +62,7 @@ export default function sagaMiddlewareFactory(options = {}) {
 
     function runSaga(saga, args, sagaId) {
       return proc(
+        new Scheduler(),
         saga(...args),
         sagaEmitter.subscribe,
         sagaDispatch,

@@ -3,6 +3,7 @@ import { END } from '../../src'
 import proc from '../../src/internal/proc'
 import { deferred } from '../../src/utils'
 import * as io from '../../src/effects'
+import Scheduler from "../../src/internal/scheduler";
 
 
 test('processor race between effects handling', assert => {
@@ -24,7 +25,7 @@ test('processor race between effects handling', assert => {
     }) )
   }
 
-  proc(genFn(), input).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), genFn(), input).done.catch(err => assert.fail(err))
 
   const expected = [{timeout: 1}];
 
@@ -56,7 +57,7 @@ test('processor race between effects: handle END', assert => {
     }) )
   }
 
-  proc(genFn(), input).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), genFn(), input).done.catch(err => assert.fail(err))
 
   const expected = [{timeout: 1}];
 
@@ -99,7 +100,7 @@ test('processor race between sync effects', assert => {
     )
   }
 
-  proc(genFn(), input).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), genFn(), input).done.catch(err => assert.fail(err))
 
   const expected = [[], [{ type: 'y' }]];
 

@@ -1,6 +1,7 @@
 import test from 'tape';
 import proc from '../../src/internal/proc'
 import * as io from '../../src/effects'
+import Scheduler from "../../src/internal/scheduler";
 
 const DELAY = 50
 
@@ -35,7 +36,7 @@ test('processor handles call effects and resume with the resolved values', asser
     actual.push( yield io.call(subGen, io, 4)  )
   }
 
-  proc(genFn()).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), genFn()).done.catch(err => assert.fail(err))
 
   const expected = [1, 2, 3, 4];
 
@@ -69,7 +70,7 @@ test('processor handles call effects and throw the rejected values inside the ge
     }
   }
 
-  proc(genFnParent(),undefined,dispatch).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), genFnParent(),undefined,dispatch).done.catch(err => assert.fail(err))
 
   const expected = ['start', 'failure']
   setTimeout(() => {
@@ -111,7 +112,7 @@ test('processor handles call\'s synchronous failures and throws in the calling g
     }
   }
 
-  proc(genFnParent(),undefined,dispatch).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), genFnParent(),undefined,dispatch).done.catch(err => assert.fail(err))
 
   const expected = ['start parent','startChild','failure child','success parent']
   setTimeout(() => {
@@ -154,7 +155,7 @@ test('processor handles call\'s synchronous failures and throws in the calling g
     }
   }
 
-  proc(genFnParent(),undefined,dispatch).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), genFnParent(),undefined,dispatch).done.catch(err => assert.fail(err))
 
   const expected = ['start parent','startChild','failure child','failure parent']
   setTimeout(() => {
@@ -187,7 +188,7 @@ test('processor handles call\'s synchronous failures and throws in the calling g
     }
   }
 
-  proc(genFnParent(),undefined,dispatch).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), genFnParent(),undefined,dispatch).done.catch(err => assert.fail(err))
 
 
   const expected = ['start parent','child error','failure parent'];

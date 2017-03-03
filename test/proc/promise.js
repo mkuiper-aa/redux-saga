@@ -1,5 +1,6 @@
 import test from 'tape';
 import proc from '../../src/internal/proc'
+import Scheduler from "../../src/internal/scheduler";
 
 test('proc native promise handling', assert => {
   assert.plan(1)
@@ -15,7 +16,7 @@ test('proc native promise handling', assert => {
     }
   }
 
-  const endP = proc(genFn()).done
+  const endP = proc(new Scheduler(), genFn()).done
   endP.catch(err => assert.fail(err))
 
   endP.then(() => {
@@ -39,7 +40,7 @@ test('proc native promise handling: undefined errors', assert => {
     }
   }
 
-  const endP = proc(genFn()).done
+  const endP = proc(new Scheduler(), genFn()).done
   endP.catch(err => assert.fail(err))
 
   endP.then(() => {

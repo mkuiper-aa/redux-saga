@@ -1,10 +1,10 @@
 import { noop, kTrue, is, log as _log, check, deferred, uid as nextEffectId, remove, TASK, CANCEL, SELF_CANCELLATION, makeIterator, isDev } from './utils'
-import { asap, suspend, flush } from './scheduler'
 import { asEffect } from './io'
 import { stdChannel as _stdChannel, eventChannel, isEnd } from './channel'
 import { buffers } from './buffers'
 
-export const NOT_ITERATOR_ERROR = 'proc first argument (Saga function result) must be an iterator'
+export const NOT_SCHEDULER_ERROR = 'proc first argument must be a scheduler'
+export const NOT_ITERATOR_ERROR = 'proc second argument (Saga function result) must be an iterator'
 
 export const CHANNEL_END = {toString() { return '@@redux-saga/CHANNEL_END' }}
 export const TASK_CANCEL = {toString() { return '@@redux-saga/TASK_CANCEL' }}
@@ -135,6 +135,7 @@ function createTaskIterator({context, fn, args}) {
 const wrapHelper = (helper) => ({ fn: helper })
 
 export default function proc(
+  scheduler,
   iterator,
   subscribe = () => noop,
   dispatch = noop,
@@ -144,11 +145,12 @@ export default function proc(
   name = 'anonymous',
   cont
 ) {
+  check(scheduler, is.scheduler, NOT_SCHEDULER_ERROR)
   check(iterator, is.iterator, NOT_ITERATOR_ERROR)
 
   const {sagaMonitor, logger, onError} = options
   const log = logger || _log
-  const stdChannel = _stdChannel(subscribe)
+  const stdChannel = _stdChannel(scheduler, subscribe)
   /**
     Tracks the current effect cancellation
     Each time the generator progresses. calling runEffect will set a new value
@@ -403,7 +405,7 @@ export default function proc(
   }
 
   function resolveIterator(iterator, effectId, name, cb) {
-    proc(iterator, subscribe, dispatch, getState, options, effectId, name, cb)
+    proc(scheduler, iterator, subscribe, dispatch, getState, options, effectId, name, cb)
   }
 
   function runTakeEffect({channel, pattern, maybe}, cb) {
@@ -427,7 +429,7 @@ export default function proc(
       The put will be executed atomically. ie nested puts will execute after
       this put has terminated.
     **/
-    asap(() => {
+    scheduler.asap(() => {
       let result
       try {
         result = (channel ? channel.put : dispatch)(action)
@@ -481,8 +483,8 @@ export default function proc(
     const taskIterator = createTaskIterator({context, fn, args})
 
     try {
-      suspend()
-      const task = proc(taskIterator, subscribe, dispatch, getState, options, effectId, fn.name, (detached ? null : noop))
+      scheduler.suspend()
+      const task = proc(scheduler, taskIterator, subscribe, dispatch, getState, options, effectId, fn.name, (detached ? null : noop))
 
       if(detached) {
         cb(task)
@@ -497,7 +499,7 @@ export default function proc(
         }
       }
     } finally {
-      flush()
+      scheduler.flush()
     }
     // Fork effects are non cancellables
   }

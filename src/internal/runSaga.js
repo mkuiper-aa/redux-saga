@@ -1,5 +1,6 @@
 import { is, check, uid as nextSagaId, wrapSagaDispatch } from './utils'
 import proc from './proc'
+import Scheduler from "./scheduler";
 
 export function runSaga(
   iterator,
@@ -20,6 +21,7 @@ export function runSaga(
     sagaMonitor.effectTriggered({effectId, root: true, parentEffectId: 0, effect: {root: true, saga: iterator, args:[]}})
   }
   const task = proc(
+    new Scheduler(),
     iterator,
     subscribe,
     wrapSagaDispatch(dispatch),

@@ -1,16 +1,25 @@
 import test from 'tape';
-import proc, { NOT_ITERATOR_ERROR } from '../../src/internal/proc'
+import proc, { NOT_ITERATOR_ERROR, NOT_SCHEDULER_ERROR } from '../../src/internal/proc'
 import { is } from '../../src/utils'
 import * as io from '../../src/effects'
+import Scheduler from "../../src/internal/scheduler";
 
 const DELAY = 50
 
 
 test('proc input', assert => {
-  assert.plan(1)
-
+  assert.plan(2)
+  
   try {
     proc({})
+  } catch(error) {
+    assert.equal(error.message, NOT_SCHEDULER_ERROR,
+      'proc must throw if not provided with a scheduler'
+    )
+  }
+  
+  try {
+    proc(new Scheduler(), {})
   } catch(error) {
     assert.equal(error.message, NOT_ITERATOR_ERROR,
       'proc must throw if not provided with an iterator'
@@ -18,7 +27,7 @@ test('proc input', assert => {
   }
 
   try {
-    proc((function*() {})())
+    proc(new Scheduler(), (function*() {})())
   } catch(error) {
     assert.fail("proc must not throw if provided with an iterable")
   }
@@ -39,7 +48,7 @@ test('proc iteration', assert => {
   }
 
   const iterator = genFn()
-  const endP = proc(iterator).done.catch(err => assert.fail(err))
+  const endP = proc(new Scheduler(), iterator).done.catch(err => assert.fail(err))
   assert.equal(is.promise(endP), true,
   'proc should return a promise of the iterator result'
   )
@@ -72,7 +81,7 @@ test('proc error handling', assert => {
     fnThrow()
   }
 
-  proc(genThrow()).done.then(
+  proc(new Scheduler(), genThrow()).done.then(
     () => assert.fail('proc must return a rejected promise if generator throws an uncaught error'),
     err => assert.equal(err, 'error', 'proc must return a rejected promise if generator throws an uncaught error')
   )
@@ -93,7 +102,7 @@ test('proc error handling', assert => {
 
   }
 
-  proc(genFinally()).done.then(
+  proc(new Scheduler(), genFinally()).done.then(
     () => assert.deepEqual(actual, ['caught-error', 'finally'], 'proc must route to catch/finally blocks in the generator'),
     () => assert.fail('proc must route to catch/finally blocks in the generator')
   )
@@ -111,7 +120,7 @@ test('processor output handling', assert => {
     yield io.put(2)
   }
 
-  proc(genFn('arg'), undefined, dispatch).done.catch(err => assert.fail(err))
+  proc(new Scheduler(), genFn('arg'), undefined, dispatch).done.catch(err => assert.fail(err))
 
   const expected = ['arg', 2];
   setTimeout(() => {

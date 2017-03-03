@@ -100,7 +100,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 	});
 
-	var _sagaHelpers = __webpack_require__(6);
+	var _sagaHelpers = __webpack_require__(7);
 
 	Object.defineProperty(exports, 'takeEvery', {
 	  enumerable: true,
@@ -193,6 +193,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	var MATCH = exports.MATCH = sym('MATCH');
 	var CANCEL = exports.CANCEL = sym('cancelPromise');
 	var SAGA_ACTION = exports.SAGA_ACTION = sym('SAGA_ACTION');
+	var SELF_CANCELLATION = exports.SELF_CANCELLATION = sym('SELF_CANCELLATION');
 	var konst = exports.konst = function konst(v) {
 	  return function () {
 	    return v;
@@ -534,8 +535,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _buffers = __webpack_require__(2);
 
-	var _scheduler = __webpack_require__(7);
-
 	var CHANNEL_END_TYPE = '@@redux-saga/CHANNEL_END';
 	var END = exports.END = { type: CHANNEL_END_TYPE };
 	var isEnd = exports.isEnd = function isEnd(a) {
@@ -704,7 +703,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        cb(input);
 	        return;
 	      }
-	      (0, _scheduler.asap)(function () {
+	      asap(function () {
 	        return cb(input);
 	      });
 	    });
@@ -754,7 +753,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _utils = __webpack_require__(1);
 
-	var _sagaHelpers = __webpack_require__(6);
+	var _sagaHelpers = __webpack_require__(7);
 
 	function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
@@ -903,12 +902,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	      return join(t);
 	    });
 	  }
-	  (0, _utils.check)(tasks, _utils.is.notUndef, 'join(task): argument task is undefined');
-	  if (!_utils.is.task(tasks[0])) {
-	    throw new Error('join(task): argument ' + tasks[0] + ' is not a valid Task object ' + TEST_HINT);
-	  }
-
-	  return effect(JOIN, tasks[0]);
+	  var task = tasks[0];
+	  (0, _utils.check)(task, _utils.is.notUndef, 'join(task): argument task is undefined');
+	  (0, _utils.check)(task, _utils.is.task, 'join(task): argument ' + task + ' is not a valid Task object ' + TEST_HINT);
+	  return effect(JOIN, task);
 	}
 
 	function cancel() {
@@ -921,12 +918,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	      return cancel(t);
 	    });
 	  }
-	  (0, _utils.check)(tasks[0], _utils.is.notUndef, 'cancel(task): argument task is undefined');
-	  if (!_utils.is.task(tasks[0])) {
-	    throw new Error('cancel(task): argument ' + tasks[0] + ' is not a valid Task object ' + TEST_HINT);
+	  var task = tasks[0];
+	  if (tasks.length === 1) {
+	    (0, _utils.check)(task, _utils.is.notUndef, 'cancel(task): argument task is undefined');
+	    (0, _utils.check)(task, _utils.is.task, 'cancel(task): argument ' + task + ' is not a valid Task object ' + TEST_HINT);
 	  }
-
-	  return effect(CANCEL, tasks[0]);
+	  return effect(CANCEL, task || _utils.SELF_CANCELLATION);
 	}
 
 	function select(selector) {
@@ -1018,7 +1015,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
-	exports.TASK_CANCEL = exports.CHANNEL_END = exports.NOT_ITERATOR_ERROR = undefined;
+	exports.TASK_CANCEL = exports.CHANNEL_END = exports.NOT_ITERATOR_ERROR = exports.NOT_SCHEDULER_ERROR = undefined;
 
 	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
@@ -1026,13 +1023,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _utils = __webpack_require__(1);
 
-	var _scheduler = __webpack_require__(7);
-
 	var _io = __webpack_require__(4);
 
 	var _channel = __webpack_require__(3);
 
 	var _buffers = __webpack_require__(2);
+
+	var _scheduler = __webpack_require__(6);
+
+	var _scheduler2 = _interopRequireDefault(_scheduler);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	function _defineEnumerableProperties(obj, descs) { for (var key in descs) { var desc = descs[key]; desc.configurable = desc.enumerable = true; if ("value" in desc) desc.writable = true; Object.defineProperty(obj, key, desc); } return obj; }
 
@@ -1040,7 +1041,8 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
-	var NOT_ITERATOR_ERROR = exports.NOT_ITERATOR_ERROR = 'proc first argument (Saga function result) must be an iterator';
+	var NOT_SCHEDULER_ERROR = exports.NOT_SCHEDULER_ERROR = 'proc first argument must be a scheduler';
+	var NOT_ITERATOR_ERROR = exports.NOT_ITERATOR_ERROR = 'proc second argument (Saga function result) must be an iterator';
 
 	var CHANNEL_END = exports.CHANNEL_END = {
 	  toString: function toString() {
@@ -1205,17 +1207,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	  return { fn: helper };
 	};
 
-	function proc(iterator) {
-	  var subscribe = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : function () {
+	function proc(scheduler, iterator) {
+	  var subscribe = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : function () {
 	    return _utils.noop;
 	  };
-	  var dispatch = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : _utils.noop;
-	  var getState = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : _utils.noop;
-	  var options = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {};
-	  var parentEffectId = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 0;
-	  var name = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : 'anonymous';
-	  var cont = arguments[7];
+	  var dispatch = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : _utils.noop;
+	  var getState = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : _utils.noop;
+	  var options = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : {};
+	  var parentEffectId = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : 0;
+	  var name = arguments.length > 7 && arguments[7] !== undefined ? arguments[7] : 'anonymous';
+	  var cont = arguments[8];
 
+	  (0, _utils.check)(scheduler, (typeof scheduler === 'undefined' ? 'undefined' : _typeof(scheduler)) == _scheduler2.default, NOT_SCHEDULER_ERROR);
 	  (0, _utils.check)(iterator, _utils.is.iterator, NOT_ITERATOR_ERROR);
 
 	  var sagaMonitor = options.sagaMonitor,
@@ -1459,7 +1462,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 
 	  function resolveIterator(iterator, effectId, name, cb) {
-	    proc(iterator, subscribe, dispatch, getState, options, effectId, name, cb);
+	    proc(scheduler, iterator, subscribe, dispatch, getState, options, effectId, name, cb);
 	  }
 
 	  function runTakeEffect(_ref2, cb) {
@@ -1489,7 +1492,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      The put will be executed atomically. ie nested puts will execute after
 	      this put has terminated.
 	    **/
-	    (0, _scheduler.asap)(function () {
+	    scheduler.asap(function () {
 	      var result = void 0;
 	      try {
 	        result = (channel ? channel.put : dispatch)(action);
@@ -1533,17 +1536,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    // catch synchronous failures; see #152
 	    try {
-	      (function () {
-	        var cpsCb = function cpsCb(err, res) {
-	          return _utils.is.undef(err) ? cb(res) : cb(err, true);
+	      var cpsCb = function cpsCb(err, res) {
+	        return _utils.is.undef(err) ? cb(res) : cb(err, true);
+	      };
+	      fn.apply(context, args.concat(cpsCb));
+	      if (cpsCb.cancel) {
+	        cb.cancel = function () {
+	          return cpsCb.cancel();
 	        };
-	        fn.apply(context, args.concat(cpsCb));
-	        if (cpsCb.cancel) {
-	          cb.cancel = function () {
-	            return cpsCb.cancel();
-	          };
-	        }
-	      })();
+	      }
 	    } catch (error) {
 	      return cb(error, true);
 	    }
@@ -1558,8 +1559,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var taskIterator = createTaskIterator({ context: context, fn: fn, args: args });
 
 	    try {
-	      (0, _scheduler.suspend)();
-	      var _task = proc(taskIterator, subscribe, dispatch, getState, options, effectId, fn.name, detached ? null : _utils.noop);
+	      scheduler.suspend();
+	      var _task = proc(scheduler, taskIterator, subscribe, dispatch, getState, options, effectId, fn.name, detached ? null : _utils.noop);
 
 	      if (detached) {
 	        cb(_task);
@@ -1574,28 +1575,29 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	      }
 	    } finally {
-	      (0, _scheduler.flush)();
+	      scheduler.flush();
 	    }
 	    // Fork effects are non cancellables
 	  }
 
 	  function runJoinEffect(t, cb) {
 	    if (t.isRunning()) {
-	      (function () {
-	        var joiner = { task: task, cb: cb };
-	        cb.cancel = function () {
-	          return (0, _utils.remove)(t.joiners, joiner);
-	        };
-	        t.joiners.push(joiner);
-	      })();
+	      var joiner = { task: task, cb: cb };
+	      cb.cancel = function () {
+	        return (0, _utils.remove)(t.joiners, joiner);
+	      };
+	      t.joiners.push(joiner);
 	    } else {
 	      t.isAborted() ? cb(t.error(), true) : cb(t.result());
 	    }
 	  }
 
-	  function runCancelEffect(task, cb) {
-	    if (task.isRunning()) {
-	      task.cancel();
+	  function runCancelEffect(taskToCancel, cb) {
+	    if (taskToCancel === _utils.SELF_CANCELLATION) {
+	      taskToCancel = task;
+	    }
+	    if (taskToCancel.isRunning()) {
+	      taskToCancel.cancel();
 	    }
 	    cb();
 	    // cancel effects are non cancellables
@@ -1751,6 +1753,97 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 6 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var Scheduler = function () {
+	  function Scheduler() {
+	    _classCallCheck(this, Scheduler);
+
+	    this._queue = [];
+	    /**
+	     Variable to hold a counting semaphore
+	     - Incrementing adds a lock and puts the scheduler in a `suspended` state (if it's not
+	     already suspended)
+	     - Decrementing releases a lock. Zero locks puts the scheduler in a `released` state. This
+	     triggers flushing the queued tasks.
+	     **/
+	    this._semaphore = 0;
+	  }
+
+	  /**
+	   Executes a task 'atomically'. Tasks scheduled during this execution will be queued
+	   and flushed after this task has finished (assuming the scheduler endup in a released
+	   state).
+	   **/
+
+
+	  _createClass(Scheduler, [{
+	    key: "exec",
+	    value: function exec(task) {
+	      try {
+	        this.suspend();
+	        task();
+	      } finally {
+	        this.flush();
+	      }
+	    }
+
+	    /**
+	     Executes or queues a task depending on the state of the scheduler (`suspended` or `released`)
+	     **/
+
+	  }, {
+	    key: "asap",
+	    value: function asap(task) {
+	      if (!this._semaphore) {
+	        this.exec(task);
+	      } else {
+	        this._queue.push(task);
+	      }
+	    }
+
+	    /**
+	     Puts the scheduler in a `suspended` state. Scheduled tasks will be queued until the
+	     scheduler is released.
+	     **/
+
+	  }, {
+	    key: "suspend",
+	    value: function suspend() {
+	      this._semaphore++;
+	    }
+
+	    /**
+	     Releases the current lock. Executes all queued tasks if the scheduler is in the released state.
+	     **/
+
+	  }, {
+	    key: "flush",
+	    value: function flush() {
+	      this._semaphore--;
+	      if (!this._semaphore && this._queue.length) {
+	        this.exec(this._queue.shift());
+	      }
+	    }
+	  }]);
+
+	  return Scheduler;
+	}();
+
+	exports.default = Scheduler;
+
+/***/ },
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1893,7 +1986,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	  var yActionChannel = { done: false, value: (0, _io.actionChannel)(pattern, _buffers.buffers.sliding(1)) };
 	  var yTake = function yTake() {
-	    return { done: false, value: (0, _io.take)(channel, pattern) };
+	    return { done: false, value: (0, _io.take)(channel) };
 	  };
 	  var yFork = function yFork(ac) {
 	    return { done: false, value: _io.fork.apply(undefined, [worker].concat(args, [ac])) };
@@ -1929,72 +2022,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	var takeEvery = exports.takeEvery = (0, _utils.deprecate)(takeEveryHelper, deprecationWarning('takeEvery'));
 	var takeLatest = exports.takeLatest = (0, _utils.deprecate)(takeLatestHelper, deprecationWarning('takeLatest'));
 	var throttle = exports.throttle = (0, _utils.deprecate)(throttleHelper, deprecationWarning('throttle'));
-
-/***/ },
-/* 7 */
-/***/ function(module, exports) {
-
-	"use strict";
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.asap = asap;
-	exports.suspend = suspend;
-	exports.flush = flush;
-
-	var queue = [];
-	/**
-	  Variable to hold a counting semaphore
-	  - Incrementing adds a lock and puts the scheduler in a `suspended` state (if it's not
-	    already suspended)
-	  - Decrementing releases a lock. Zero locks puts the scheduler in a `released` state. This
-	    triggers flushing the queued tasks.
-	**/
-	var semaphore = 0;
-
-	/**
-	  Executes a task 'atomically'. Tasks scheduled during this execution will be queued
-	  and flushed after this task has finished (assuming the scheduler endup in a released
-	  state).
-	**/
-	function exec(task) {
-	  try {
-	    suspend();
-	    task();
-	  } finally {
-	    flush();
-	  }
-	}
-
-	/**
-	  Executes or queues a task depending on the state of the scheduler (`suspended` or `released`)
-	**/
-	function asap(task) {
-	  if (!semaphore) {
-	    exec(task);
-	  } else {
-	    queue.push(task);
-	  }
-	}
-
-	/**
-	  Puts the scheduler in a `suspended` state. Scheduled tasks will be queued until the
-	  scheduler is released.
-	**/
-	function suspend() {
-	  semaphore++;
-	}
-
-	/**
-	  Releases the current lock. Executes all queued tasks if the scheduler is in the released state.
-	**/
-	function flush() {
-	  semaphore--;
-	  if (!semaphore && queue.length) {
-	    exec(queue.shift());
-	  }
-	}
 
 /***/ },
 /* 8 */
@@ -2136,6 +2163,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _channel = __webpack_require__(3);
 
+	var _scheduler = __webpack_require__(6);
+
+	var _scheduler2 = _interopRequireDefault(_scheduler);
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
@@ -2192,7 +2223,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var sagaDispatch = (0, _utils.wrapSagaDispatch)(dispatch);
 
 	    function runSaga(saga, args, sagaId) {
-	      return (0, _proc2.default)(saga.apply(undefined, _toConsumableArray(args)), sagaEmitter.subscribe, sagaDispatch, getState, options, sagaId, saga.name);
+	      return (0, _proc2.default)(new _scheduler2.default(), saga.apply(undefined, _toConsumableArray(args)), sagaEmitter.subscribe, sagaDispatch, getState, options, sagaId, saga.name);
 	    }
 
 	    return function (next) {
@@ -2246,6 +2277,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _proc2 = _interopRequireDefault(_proc);
 
+	var _scheduler = __webpack_require__(6);
+
+	var _scheduler2 = _interopRequireDefault(_scheduler);
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	function runSaga(iterator, _ref) {
@@ -2263,7 +2298,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  if (sagaMonitor) {
 	    sagaMonitor.effectTriggered({ effectId: effectId, root: true, parentEffectId: 0, effect: { root: true, saga: iterator, args: [] } });
 	  }
-	  var task = (0, _proc2.default)(iterator, subscribe, (0, _utils.wrapSagaDispatch)(dispatch), getState, { sagaMonitor: sagaMonitor, logger: logger, onError: onError }, effectId, iterator.name);
+	  var task = (0, _proc2.default)(new _scheduler2.default(), iterator, subscribe, (0, _utils.wrapSagaDispatch)(dispatch), getState, { sagaMonitor: sagaMonitor, logger: logger, onError: onError }, effectId, iterator.name);
 
 	  if (sagaMonitor) {
 	    sagaMonitor.effectResolved(effectId, task);
